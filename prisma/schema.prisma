@@ -1,0 +1,117 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String          @id @default(uuid())
+  email          String          @unique
+  name           String?
+  password       String
+  role           Role            @default(USER)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  evaluations    Evaluation[]
+  departments    Department[]    @relation("DepartmentManagers")
+  buildings      Building[]      @relation("BuildingManagers")
+}
+
+enum Role {
+  USER
+  MANAGER
+  ADMIN
+}
+
+model Building {
+  id          String      @id @default(uuid())
+  name        String
+  address     String?
+  floors      Int         @default(1)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  rooms       Room[]
+  managers    User[]      @relation("BuildingManagers")
+}
+
+model Room {
+  id          String       @id @default(uuid())
+  name        String
+  number      String
+  floor       Int
+  capacity    Int?
+  type        RoomType     @default(CLASSROOM)
+  status      RoomStatus   @default(AVAILABLE)
+  buildingId  String
+  building    Building     @relation(fields: [buildingId], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  amenities   Amenity[]
+  evaluations Evaluation[]
+  departmentId String?
+  department  Department?  @relation(fields: [departmentId], references: [id])
+}
+
+enum RoomType {
+  CLASSROOM
+  OFFICE
+  LABORATORY
+  MEETING_ROOM
+  AUDITORIUM
+  OTHER
+}
+
+enum RoomStatus {
+  AVAILABLE
+  UNDER_MAINTENANCE
+  RENOVATING
+  RESERVED
+  INACTIVE
+}
+
+model Amenity {
+  id          String      @id @default(uuid())
+  name        String
+  description String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  rooms       Room[]
+}
+
+model Department {
+  id          String      @id @default(uuid())
+  name        String
+  code        String      @unique
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  rooms       Room[]
+  managers    User[]      @relation("DepartmentManagers")
+}
+
+model Evaluation {
+  id             String           @id @default(uuid())
+  cleanliness    Int              // Rating 1-5
+  maintenance    Int              // Rating 1-5
+  equipment      Int              // Rating 1-5
+  comfort        Int              // Rating 1-5
+  accessibility  Int              // Rating 1-5
+  overall        Int              // Rating 1-5
+  comments       String?
+  images         String[]         // URLs to evaluation images
+  roomId         String
+  room           Room             @relation(fields: [roomId], references: [id])
+  evaluatorId    String
+  evaluator      User             @relation(fields: [evaluatorId], references: [id])
+  evaluationDate DateTime         @default(now())
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+}
